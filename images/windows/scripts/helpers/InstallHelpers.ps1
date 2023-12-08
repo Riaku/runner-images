@@ -636,6 +636,10 @@ function Resolve-GithubReleaseAssetUrl {
         The pattern to match against the download URLs of the release assets.
         Wildcards (*) can be used to match any characters.
 
+    .PARAMETER latestMatch
+        Only takes effect if multiple releases match the specified version.
+        Runs a sort on all returned results and picks the "greatest" result. This is ideally the latest version.
+
     .EXAMPLE
         Resolve-GithubReleaseAssetUrl -Repository "myrepo" -Version "1.0" -UrlMatchPattern "*.zip"
         Retrieves the download URL for the asset in the "myrepo" repository with version "1.0" and a file extension of ".zip".
@@ -650,7 +654,8 @@ function Resolve-GithubReleaseAssetUrl {
         [switch] $AllowPrerelease,
         [Parameter(Mandatory = $true)]
         [Alias("Pattern", "File", "Asset")]
-        [string] $UrlMatchPattern
+        [string] $UrlMatchPattern,
+        [switch] $latestMatch
     )
 
     $matchingReleases = Get-GithubReleasesByVersion `
@@ -671,6 +676,10 @@ function Resolve-GithubReleaseAssetUrl {
         if ($matchedUrl) {
             break
         }
+    }
+
+    if($latestMatch -and $matchedUrl.Count -gt 1) {
+        $matchedUrl = $matchedUrl | Sort-Object version| Select-Object -last 1
     }
 
     if (-not $matchedUrl) {
